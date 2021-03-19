@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -72,7 +73,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	text = strings.ReplaceAll(text, "\n", " ")
 	text = strings.ReplaceAll(text, "’", " ")
 
-	fmt.Println(text)
+	// fmt.Println(text)
 
 	parole := strings.Split(text, " ")
 
@@ -83,15 +84,26 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		m[parola]++
 	}
 
-	var records [][]string
-	for k, v := range m {
-		records = append(records, []string{k, strconv.Itoa(v)})
+	type kv struct {
+		k string
+		v int
 	}
 
+	var records [][]kv
+	var element []kv
+	for k, v := range m {
+		element = append(element, kv{k, v})
+	}
+	records = append(records, element)
+	sort.SliceStable(element, func(i, j int) bool {
+		return element[i].v > element[j].v
+	})
 	wr := csv.NewWriter(w)
 
-	for _, record := range records {
-		if err := wr.Write(record); err != nil {
+	wr.Comma = ';'
+
+	for _, record := range element {
+		if err := wr.Write([]string{record.k, strconv.Itoa(record.v)}); err != nil {
 			log.Fatalln("error writing record to csv:", err)
 		}
 	}
@@ -102,13 +114,15 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	if err := wr.Error(); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Fprintln(w, nil)
+	fmt.Fprintln(w, nil)
 
-	for k, v := range m {
-		fmt.Fprintln(w, k, v)
-	}
+	// for k, v := range m {
+	// 	fmt.Fprintln(w, k, v)
+	// }
 	// return that we have successfully uploaded our file!
 	//fmt.Fprintf(w, "Successfully Uploaded File\n")
-	fmt.Fprint(w, text)
+	//fmt.Fprint(w, text)
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
