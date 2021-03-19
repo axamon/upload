@@ -78,6 +78,9 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	parole := strings.Split(text, " ")
 
 	for _, parola := range parole {
+		if parola == " " || parola == "" || parola == "-" {
+			continue
+		}
 		parola = strings.TrimSpace(parola)
 		parola = strings.Trim(parola, ",;.!?\n")
 		parola = strings.ToLower(parola)
@@ -102,6 +105,8 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	wr.Comma = ';'
 
+	// Scrive heaerds
+	wr.Write([]string{"#Keyword", "Occorrenze"})
 	for _, record := range element {
 		if err := wr.Write([]string{record.k, strconv.Itoa(record.v)}); err != nil {
 			log.Fatalln("error writing record to csv:", err)
