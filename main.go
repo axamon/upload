@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"code.sajari.com/docconv"
@@ -80,6 +82,27 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		parola = strings.ToLower(parola)
 		m[parola]++
 	}
+
+	var records [][]string
+	for k, v := range m {
+		records = append(records, []string{k, strconv.Itoa(v)})
+	}
+
+	wr := csv.NewWriter(w)
+
+	for _, record := range records {
+		if err := wr.Write(record); err != nil {
+			log.Fatalln("error writing record to csv:", err)
+		}
+	}
+
+	// Write any buffered data to the underlying writer (standard output).
+	wr.Flush()
+
+	if err := wr.Error(); err != nil {
+		log.Fatal(err)
+	}
+
 	for k, v := range m {
 		fmt.Fprintln(w, k, v)
 	}
@@ -88,8 +111,14 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, text)
 }
 
+func index(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./index.html")
+	return
+}
+
 func setupRoutes() {
 	http.HandleFunc("/upload", uploadFile)
+	http.HandleFunc("/", index)
 	http.ListenAndServe(":8080", nil)
 }
 
